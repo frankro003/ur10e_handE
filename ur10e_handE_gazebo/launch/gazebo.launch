@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world_name" default="$(find gazebo_ros)/worlds/empty_world.world"/>
+  <arg name="transmission_hw_interface" default="hardware_interface/PositionJointInterface" />
+
+  <!-- send robot urdf to param server -->
+  <param name="robot_description" 
+         command="$(find xacro)/xacro --inorder '$(find ur10e_handE_description)/urdf/ur10e_habdE.urdf.xacro'
+                   transmission_hw_interface:=$(arg transmission_hw_interface)" />
+                   
+
+    <!-- GAZEBO arguments -->
+    <arg name="paused" default="false" />
+    <arg name="use_sim_time" default="true" />
+    <arg name="gui" default="true" />
+    <arg name="headless" default="false" />
+    <arg name="debug" default="false" />
+
+    <!--launch GAZEBO with own world configuration -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <!--arg name="verbose" value="true" /-->    
+        <arg name="world_name" value="$(arg world_name)"/>
+        <arg name="debug" value="$(arg debug)" />
+        <arg name="gui" value="$(arg gui)" />
+        <arg name="paused" value="$(arg paused)" />
+        <arg name="use_sim_time" value="$(arg use_sim_time)" />
+        <arg name="headless" value="$(arg headless)" />
+    </include>
+
+      <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model"
+        args="-urdf -param robot_description -model ur10e"
+        output="screen" />
+
+    <!-- Load joint controller configurations from YAML file to parameter server -->
+    <rosparam file="$(find ur10e_handE_gazebo)/controller/ur10e_hande_controller.yaml" command="load" />
+
+    <!-- load the controllers -->
+    <node name="controller_spawner"      pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller arm_controller" />
+    <!-- load the controllers Gripper -->
+    <node name="controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="gripper_controller" />
+    <!-- convert joint states to TF transforms for rviz, etc -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+
+    
+
+    <include file="$(find ur10e_handE_moveit_config)/launch/ur10e_planning_execution.launch" >
+    </include>
+
+    <!-- roslaunch rosbirde websocket setver for comunication unity3D -->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
+    <!-- Launch servo node for jog-->
+    <include file="$(find moveit_servo)/launch/spacenav_cpp.launch"/>
+    <node name="robot_push_pose" pkg="digitalTwins_topic" type="SetPosition.py" respawn="true" />
+
+
+</launch>

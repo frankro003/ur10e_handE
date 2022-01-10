@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: ur10e_handE_description
+    relative_path: urdf/ur10e_habdE.urdf.xacro
+    xacro_args: ""
+  SRDF:
+    relative_path: config/ur10e.srdf
+  CONFIG:
+    author_name: snk
+    author_email: snk@gmail.com
+    generated_timestamp: 1639491593
